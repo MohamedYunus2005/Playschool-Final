@@ -5,6 +5,8 @@ const express = require('express');
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const cors = require('cors');
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const Admin = require('./models/admin');
 const Parent = require('./models/parent');
 const Student = require('./models/Student'); // Core data model
@@ -21,7 +23,7 @@ app.use(cors());
 app.use(express.json());
 
 // 4. Database connection
-const DB_URI = 'mongodb+srv://yunusabeena09092005_db_user:0909@cluster0.idgo0zo.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0';
+const DB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/anganwadi';
 mongoose.connect(DB_URI)
     .then(() => console.log('Connected to MongoDB! 🌟'))
     .catch((error) => console.error('Connection error:', error));
@@ -30,6 +32,11 @@ mongoose.connect(DB_URI)
 
 app.get('/', (req, res) => {
     res.send('Welcome to your backend!');
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime(), timestamp: Date.now() });
 });
 
 // --- AUTHENTICATION ROUTES (Existing Logic) ---
@@ -234,6 +241,18 @@ app.delete('/api/attendance/:date', async (req, res) => {
 
 
 // 6. Start the server
+// 404 handler (for unmatched routes)
+app.use((req, res, next) => {
+    res.status(404).json({ message: 'Not Found' });
+});
+
+// Global error handler
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+    console.error('Unhandled error:', err);
+    res.status(err.status || 500).json({ message: err.message || 'Internal Server Error' });
+});
+
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
 });
